@@ -13,6 +13,7 @@ from typing import Any
 
 from graphiti_core import Graphiti
 
+from .async_runner import run_async
 from .logger import get_logger
 
 logger = get_logger('mirofish.zep_paging')
@@ -137,7 +138,7 @@ def fetch_all_nodes(
         page_num += 1
 
         batch = _fetch_page_with_retry(
-            _run,
+            run_async,
             _fetch_nodes_page(graphiti, graph_id, skip, page_size),
             max_retries=max_retries,
             retry_delay=retry_delay,
@@ -193,7 +194,7 @@ def fetch_all_edges(
         page_num += 1
 
         batch = _fetch_page_with_retry(
-            _run,
+            run_async,
             _fetch_edges_page(graphiti, graph_id, skip, page_size),
             max_retries=max_retries,
             retry_delay=retry_delay,
@@ -232,7 +233,7 @@ def fetch_node_by_uuid(
         Neo4j 节点对象，或 None（节点不存在时）。
     """
     return _fetch_page_with_retry(
-        _run,
+        run_async,
         _fetch_node_by_uuid(graphiti, node_uuid),
         max_retries=max_retries,
         retry_delay=retry_delay,
