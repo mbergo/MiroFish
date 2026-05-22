@@ -15,8 +15,9 @@ openai>=1.0.0
 # Anthropic SDK（可选，使用 Claude 模型时需要）
 anthropic>=0.40.0
 
-# ============= Zep Cloud =============
-zep-cloud==3.13.0
+# ============= Graphiti / Neo4j =============
+graphiti-core>=0.29.1
+neo4j>=6.2.0
 
 # ============= OASIS 社交媒体模拟 =============
 # OASIS 社交模拟框架
