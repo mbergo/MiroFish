@@ -314,18 +314,6 @@ class OasisProfileGenerator:
 
         comprehensive_query = t('progress.zepSearchQuery', name=entity_name)
 
-        def run_async(coro):
-            try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    import concurrent.futures
-                    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                        future = pool.submit(asyncio.run, coro)
-                        return future.result(timeout=30)
-                return loop.run_until_complete(coro)
-            except RuntimeError:
-                return asyncio.run(coro)
-
         try:
             search_results = run_async(
                 self.graphiti_client.search(
