@@ -10,6 +10,7 @@ import uuid
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 from dataclasses import dataclass
+from ..utils.async_runner import run_async
 
 from graphiti_core import Graphiti
 from graphiti_core.nodes import EpisodeType
@@ -24,19 +25,6 @@ from ..utils.locale import get_locale, set_locale, t
 # Async-in-sync helper
 # ---------------------------------------------------------------------------
 
-def _run(coro):
-    """Run async coroutine from sync context safely."""
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = None
-    if loop and loop.is_running():
-        # Running inside async context — use a new thread with its own loop
-        import concurrent.futures
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-            future = pool.submit(asyncio.run, coro)
-            return future.result()
-    return asyncio.run(coro)
 
 
 # ---------------------------------------------------------------------------
@@ -89,7 +77,7 @@ class GraphBuilderService:
             password=self._password,
         )
         # Ensure indices and constraints exist (idempotent)
-        _run(self.client.build_indices_and_constraints())
+        run_async(self.client.build_indices_and_constraints())
 
         self.task_manager = TaskManager()
         self._ontologies: Dict[str, Dict[str, Any]] = {}
@@ -248,7 +236,7 @@ class GraphBuilderService:
         """
         group_id = f"mirofish_{uuid.uuid4().hex[:16]}"
         # build_indices_and_constraints is idempotent — safe to call again
-        _run(self.client.build_indices_and_constraints())
+        run_async(self.client.build_indices_and_constraints())
         return group_id
 
     def set_ontology(self, graph_id: str, ontology: Dict[str, Any]):
@@ -295,7 +283,7 @@ class GraphBuilderService:
             try:
                 for chunk in batch_chunks:
                     ep_name = str(uuid.uuid4())
-                    _run(
+                    run_async(
                         self.client.add_episode(
                             name=ep_name,
                             episode_body=chunk,
@@ -361,7 +349,7 @@ class GraphBuilderService:
 
             for ep_name in list(pending_episodes):
                 try:
-                    found = _run(self._episode_exists(ep_name))
+                    found = run_async(self._episode_exists(ep_name))
                     if found:
                         pending_episodes.remove(ep_name)
                         completed_count += 1
@@ -402,7 +390,7 @@ class GraphBuilderService:
 
     def _get_graph_info(self, graph_id: str) -> GraphInfo:
         """获取图谱信息（直接查询 Neo4j）"""
-        node_count, edge_count, entity_types = _run(
+        node_count, edge_count, entity_types = run_async(
             self._fetch_graph_stats(graph_id)
         )
         return GraphInfo(
@@ -456,7 +444,7 @@ class GraphBuilderService:
         Returns:
             包含nodes和edges的字典，包括时间信息、属性等详细数据
         """
-        return _run(self._fetch_graph_data(graph_id))
+        return run_async(self._fetch_graph_data(graph_id))
 
     async def _fetch_graph_data(self, group_id: str) -> Dict[str, Any]:
         """Async implementation of get_graph_data querying Neo4j directly."""
@@ -544,7 +532,7 @@ class GraphBuilderService:
 
     def delete_graph(self, graph_id: str):
         """删除图谱（删除 Neo4j 中所有属于该 group_id 的节点和边）"""
-        _run(self._delete_group(graph_id))
+        run_async(self._delete_group(graph_id))
 
     async def _delete_group(self, group_id: str):
         async with self.client.driver.session() as session:

@@ -23,19 +23,6 @@ _DEFAULT_MAX_RETRIES = 3
 _DEFAULT_RETRY_DELAY = 2.0  # seconds, doubles each retry
 
 
-def _run(coro: Any) -> Any:
-    """Run async coroutine from sync context safely."""
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = None
-    if loop and loop.is_running():
-        # Running inside async context — use a new thread with its own loop
-        import concurrent.futures
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-            future = pool.submit(asyncio.run, coro)
-            return future.result()
-    return asyncio.run(coro)
 
 
 def _fetch_page_with_retry(

@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from queue import Queue, Empty
 from uuid import uuid4
+from ..utils.async_runner import run_async
 
 from graphiti_core import Graphiti
 from graphiti_core.nodes import EpisodeType
@@ -22,19 +23,6 @@ from ..utils.locale import get_locale, set_locale
 logger = get_logger('mirofish.zep_graph_memory_updater')
 
 
-def _run(coro):
-    """Run async coroutine from sync context safely."""
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = None
-    if loop and loop.is_running():
-        # Running inside async context — use a new thread with its own loop
-        import concurrent.futures
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-            future = pool.submit(asyncio.run, coro)
-            return future.result()
-    return asyncio.run(coro)
 
 
 @dataclass
@@ -433,7 +421,7 @@ class ZepGraphMemoryUpdater:
 
         for attempt in range(self.MAX_RETRIES):
             try:
-                _run(
+                run_async(
                     self.client.add_episode(
                         name=episode_name,
                         episode_body=combined_text,

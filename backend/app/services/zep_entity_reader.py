@@ -5,6 +5,7 @@ Graphiti 实体读取与过滤服务
 
 import time
 from typing import Any, Callable, Dict, List, Optional, Set, TypeVar
+from ..utils.async_runner import run_async
 
 from dataclasses import dataclass, field
 
@@ -254,7 +255,7 @@ class ZepEntityReader:
                     return [rec["e"] async for rec in result]
 
             raw_edges = self._call_with_retry(
-                func=lambda: _run(_query_node_edges(self.client, node_uuid)),
+                func=lambda: run_async(_query_node_edges(self.client, node_uuid)),
                 operation_name=f"获取节点边(node={node_uuid[:8]}...)",
             )
 

@@ -13,6 +13,7 @@ import time
 import json
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
+from ..utils.async_runner import run_async
 
 from graphiti_core import Graphiti
 
@@ -24,15 +25,6 @@ from ..utils.locale import get_locale, t
 logger = get_logger('mirofish.zep_tools')
 
 
-def _run(coro):
-    """Run an async coroutine from synchronous Flask context."""
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_closed():
-            raise RuntimeError
-        return loop.run_until_complete(coro)
-    except RuntimeError:
-        return asyncio.run(coro)
 
 
 @dataclass
@@ -488,7 +480,7 @@ class ZepToolsService:
                 )
                 return [dict(rec) async for rec in r]
 
-        return _run(_query())
+        return run_async(_query())
 
     def _fetch_all_edges_raw(self, graph_id: str) -> List[Dict[str, Any]]:
         """Return raw edge dicts from Neo4j for the given group/graph id."""
@@ -503,7 +495,7 @@ class ZepToolsService:
                 )
                 return [dict(rec) async for rec in r]
 
-        return _run(_query())
+        return run_async(_query())
 
     def _fetch_node_by_uuid_raw(self, node_uuid: str) -> Optional[Dict[str, Any]]:
         """Return a single node dict by UUID (searches across all group_ids)."""
@@ -519,7 +511,7 @@ class ZepToolsService:
                 records = [dict(rec) async for rec in r]
                 return records[0] if records else None
 
-        return _run(_query())
+        return run_async(_query())
 
     # ------------------------------------------------------------------
     # Public graph methods
@@ -552,7 +544,7 @@ class ZepToolsService:
         # 尝试使用Graphiti Search API
         try:
             raw_results = self._call_with_retry(
-                func=lambda: _run(
+                func=lambda: run_async(
                     self._graphiti.search(
                         query=query,
                         group_ids=[graph_id],

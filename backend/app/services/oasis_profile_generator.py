@@ -14,6 +14,7 @@ import time
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
+from ..utils.async_runner import run_async
 
 import asyncio
 
@@ -313,7 +314,7 @@ class OasisProfileGenerator:
 
         comprehensive_query = t('progress.zepSearchQuery', name=entity_name)
 
-        def _run(coro):
+        def run_async(coro):
             try:
                 loop = asyncio.get_event_loop()
                 if loop.is_running():
@@ -326,7 +327,7 @@ class OasisProfileGenerator:
                 return asyncio.run(coro)
 
         try:
-            search_results = _run(
+            search_results = run_async(
                 self.graphiti_client.search(
                     query=comprehensive_query,
                     group_ids=[self.graph_id],
